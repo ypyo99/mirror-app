@@ -400,6 +400,45 @@ html, body {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.res-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: rgba(20, 22, 33, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 16px;
+  color: var(--accent-cyan);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.res-badge:active {
+  transform: scale(0.95);
+  border-color: var(--accent-cyan);
+}
+
+.res-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 6px #00e5ff;
+  animation: pulseDot 1.8s infinite;
+}
+
 .mode-toggle-pill {
   display: inline-flex;
   align-items: center;

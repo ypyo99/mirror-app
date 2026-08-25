@@ -54,13 +54,26 @@ class SmartMirrorApp {
     const permModal = document.getElementById('camera-prompt-modal');
     if (permModal) permModal.classList.add('hidden');
     
+    const resBadgeText = document.getElementById('res-badge-text');
+    const resBadge = document.getElementById('res-badge');
+
     if (resInfo && resInfo.width && resInfo.height) {
-      const is4K = resInfo.width >= 3840 || resInfo.height >= 2160;
-      const isQHD = (resInfo.width >= 2560 || resInfo.height >= 1440) && !is4K;
-      const isFHD = (resInfo.width >= 1920 || resInfo.height >= 1080) && !is4K && !isQHD;
-      const label = is4K ? '4K Ultra HD' : (isQHD ? 'QHD 2K' : (isFHD ? 'Full HD' : 'HD'));
-      this.controls.showHUD(`최대 해상도 연결 (${label} ${resInfo.width}×${resInfo.height})`, '✨', 1800);
+      this.currentResolution = resInfo;
+      const w = resInfo.width;
+      const h = resInfo.height;
+      const is4K = w >= 3840 || h >= 3840;
+      const isQHD = (w >= 2560 || h >= 2560) && !is4K;
+      const isFHD = (w >= 1920 || h >= 1920 || (w >= 1080 && h >= 1080)) && !is4K && !isQHD;
+      
+      const tierLabel = is4K ? '4K UHD' : (isQHD ? '2K QHD' : (isFHD ? 'FHD' : 'HD'));
+      const displayStr = `${tierLabel} ${w}×${h}`;
+
+      if (resBadgeText) resBadgeText.textContent = displayStr;
+      if (resBadge) resBadge.title = `카메라 해상도: ${w} × ${h} (${tierLabel})`;
+
+      this.controls.showHUD(`최대 해상도 연결: ${displayStr}`, '✨', 2000);
     } else {
+      if (resBadgeText) resBadgeText.textContent = 'FHD 1080p';
       this.controls.showHUD('스마트 거울 준비 완료 ✨', '🪞', 1200);
     }
   }
@@ -74,6 +87,23 @@ class SmartMirrorApp {
   // Top Bar Handlers
   // ------------------------------------------------------------------------
   bindTopBarEvents() {
+    // 0. Resolution Badge Click
+    const resBadge = document.getElementById('res-badge');
+    if (resBadge) {
+      resBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.currentResolution) {
+          const { width, height, isSim } = this.currentResolution;
+          const msg = isSim
+            ? `데모 모드 해상도: ${width}×${height}`
+            : `카메라 실시간 해상도: ${width}×${height} (최고 화질)`;
+          this.controls.showHUD(msg, '🔍', 2000);
+        } else {
+          this.controls.showHUD('해상도: 1080×1920 (고화질)', '🔍', 1500);
+        }
+      });
+    }
+
     // 1. Mirror Mode vs True View Mode Toggle
     const btnModeToggle = document.getElementById('btn-mode-toggle');
     const modeText = document.getElementById('mode-text');

@@ -70,13 +70,20 @@ export class CameraController {
 
       await this.video.play();
 
-      const track = stream.getVideoTracks()[0];
-      const settings = track ? track.getSettings() : {};
-      const actualWidth = settings.width || this.video.videoWidth;
-      const actualHeight = settings.height || this.video.videoHeight;
-      console.log(`[Smart Mirror] Maximum Camera Resolution Active: ${actualWidth}x${actualHeight}`);
+      const emitResolution = () => {
+        const track = stream.getVideoTracks()[0];
+        const settings = track ? track.getSettings() : {};
+        const actualWidth = settings.width || this.video.videoWidth || 1920;
+        const actualHeight = settings.height || this.video.videoHeight || 1080;
+        console.log(`[Smart Mirror] Maximum Camera Resolution Active: ${actualWidth}x${actualHeight}`);
+        if (this.onStreamReady) this.onStreamReady(this.video, { width: actualWidth, height: actualHeight, isSim: false });
+      };
 
-      if (this.onStreamReady) this.onStreamReady(this.video, { width: actualWidth, height: actualHeight });
+      if (this.video.readyState >= 1 && this.video.videoWidth > 0) {
+        emitResolution();
+      } else {
+        this.video.onloadedmetadata = () => emitResolution();
+      }
       return true;
     } catch (err) {
       console.warn('Camera access failed or unavailable, starting simulation mode:', err);
@@ -273,7 +280,7 @@ export class CameraController {
     };
 
     renderSim();
-    if (this.onStreamReady) this.onStreamReady(this.simCanvas);
+    if (this.onStreamReady) this.onStreamReady(this.simCanvas, { width: 1080, height: 1920, isSim: true });
   }
 
   stopSimulation() {
