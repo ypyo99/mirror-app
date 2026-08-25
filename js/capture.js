@@ -178,15 +178,42 @@ export class CaptureController {
     }, 1000);
   }
 
-  executeCapture(onPhotoCaptured) {
+  async executeCapture(onPhotoCaptured) {
     this.triggerFlash();
     this.playShutterSound();
 
-    const source = this.isFrozen ? this.freezeCanvas : this.camera.getCurrentSource();
+    const isMirrorMode = document.getElementById('app').classList.contains('mirror-mode');
+    const zoom = this.camera.zoom || 1.0;
+
+    let sourceBitmap = null;
+    let width = 1080;
+    let height = 1920;
+
+    // 1. Try ImageCapture API for native sensor full resolution (4K, QHD, 12MP+) if not frozen
+    if (!this.isFrozen && this.camera.stream && window.ImageCapture) {
+      try {
+        const track = this.camera.stream.getVideoTracks()[0];
+        if (track && track.readyState === 'live') {
+          const imageCapture = new window.ImageCapture(track);
+          if (imageCapture.grabFrame) {
+            sourceBitmap = await imageCapture.grabFrame();
+            width = sourceBitmap.width;
+            height = sourceBitmap.height;
+            console.log(`[Smart Mirror] Native Sensor High-Res Frame Captured: ${width}x${height}`);
+          }
+        }
+      } catch (e) {
+        console.warn('ImageCapture fallback to video element:', e);
+      }
+    }
+
+    const source = sourceBitmap || (this.isFrozen ? this.freezeCanvas : this.camera.getCurrentSource());
     if (!source) return;
 
-    const width = source.videoWidth || source.width || 1080;
-    const height = source.videoHeight || source.height || 1920;
+    if (!sourceBitmap) {
+      width = source.videoWidth || source.width || 1080;
+      height = source.videoHeight || source.height || 1920;
+    }
 
     const outCanvas = document.createElement('canvas');
     outCanvas.width = width;
@@ -197,10 +224,6 @@ export class CaptureController {
 
     // Apply active filter
     ctx.filter = this.filters.getFilterString();
-
-    // Check mirror mode
-    const isMirrorMode = document.getElementById('app').classList.contains('mirror-mode');
-    const zoom = this.camera.zoom || 1.0;
 
     ctx.save();
     ctx.translate(width / 2, height / 2);
@@ -214,7 +237,7 @@ export class CaptureController {
     ctx.drawImage(source, -width / 2, -height / 2, width, height);
     ctx.restore();
 
-    // If ring light was ON, optionally blend soft glow around image borders
+    // If ring light was ON, blend soft glow around image borders
     if (this.lights.isOn) {
       ctx.save();
       const glowColor = this.lights.getColorHex();
