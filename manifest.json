@@ -1,0 +1,22 @@
+{
+  "name": "스마트 거울 - Smart Mirror HD",
+  "short_name": "스마트 거울",
+  "description": "스마트폰을 고화질 거울로 만들어주는 스마트 뷰티 & 메이크업 거울 앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#2a2e43"/>
+      <stop offset="100%" stop-color="#0a0c14"/>
+    </radialGradient>
+    <linearGradient id="neonGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b69"/>
+      <stop offset="100%" stop-color="#00e5ff"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  
+  <!-- Outer Light Ring Glowing Frame -->
+  <rect x="56" y="56" width="400" height="400" rx="96" fill="none" stroke="url(#neonGlow)" stroke-width="16" filter="url(#glow)"/>
+
+  <!-- Inner Mirror Oval Frame -->
+  <ellipse cx="256" cy="256" rx="140" ry="170" fill="#141724" stroke="#ffffff" stroke-width="6" opacity="0.9"/>
+  
+  <!-- Mirror Reflection Shimmer -->
+  <path d="M190 140 Q 256 110 310 160 Q 220 220 180 290 Z" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Magic Sparkles -->
+  <path d="M330 180 Q 330 200 350 200 Q 330 200 330 220 Q 330 200 310 200 Q 330 200 330 180 Z" fill="#ff3b69" filter="url(#glow)"/>
+  <path d="M170 330 Q 170 345 185 345 Q 170 345 170 360 Q 170 345 155 345 Q 170 345 170 330 Z" fill="#00e5ff" filter="url(#glow)"/>
+</svg>
