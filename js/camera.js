@@ -25,11 +25,18 @@ export class CameraController {
       this.stream = null;
     }
 
-    // 4K Ultra HD -> 2K QHD -> Full HD progressive resolution ladder
+    // Samsung Galaxy & Android optimized resolution candidates (4K UHD -> QHD -> FHD)
+    const isGalaxy = /Android|SM-|Samsung/i.test(navigator.userAgent);
+    console.log(`[Smart Mirror] Device profile: ${isGalaxy ? 'Samsung Galaxy / Android' : 'Standard Device'}`);
+
     const resolutionCandidates = [
+      // 4K Ultra HD / 4:3 Sensor Native
       { width: { ideal: 3840, min: 1920 }, height: { ideal: 2160, min: 1080 }, frameRate: { ideal: 60, min: 30 } },
+      { width: { ideal: 4032, min: 1920 }, height: { ideal: 3024, min: 1080 } },
+      // 2K QHD
       { width: { ideal: 2560, min: 1280 }, height: { ideal: 1440, min: 720 }, frameRate: { ideal: 60, min: 30 } },
-      { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 60, min: 24 } },
+      // Full HD 1080p
+      { width: { ideal: 1920, min: 1080 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 60, min: 30 } },
       { width: { ideal: 1280 }, height: { ideal: 720 } }
     ];
 
@@ -45,17 +52,17 @@ export class CameraController {
             audio: false,
             video: {
               facingMode: { ideal: this.facingMode },
+              resizeMode: 'none', // Prevents Android/Galaxy Camera HAL from downsampling
               ...res
             }
           });
           if (stream) break;
         } catch (resErr) {
-          console.warn('Resolution candidate not supported, trying next tier...', res);
+          // Try next candidate
         }
       }
 
       if (!stream) {
-        // Fallback to basic constraint if specific resolutions fail
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: { facingMode: { ideal: this.facingMode } }
@@ -63,6 +70,26 @@ export class CameraController {
       }
 
       this.stream = stream;
+      const track = stream.getVideoTracks()[0];
+
+      // Galaxy / Android Hardware Max Capabilities Auto-Upgrade
+      if (track && track.getCapabilities) {
+        try {
+          const caps = track.getCapabilities();
+          if (caps.width && caps.height && (caps.width.max > 1920 || caps.height.max > 1080)) {
+            console.log(`[Smart Mirror] Upgrading Galaxy Camera to hardware max: ${caps.width.max}x${caps.height.max}`);
+            await track.applyConstraints({
+              width: { ideal: caps.width.max },
+              height: { ideal: caps.height.max },
+              frameRate: caps.frameRate ? { ideal: caps.frameRate.max } : undefined,
+              advanced: [{ resizeMode: 'none' }]
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.warn('Hardware max constraint upgrade bypassed:', e);
+        }
+      }
+
       this.video.srcObject = stream;
       this.isSimulation = false;
       this.video.classList.remove('hidden');
@@ -71,11 +98,11 @@ export class CameraController {
       await this.video.play();
 
       const emitResolution = () => {
-        const track = stream.getVideoTracks()[0];
-        const settings = track ? track.getSettings() : {};
+        const currentTrack = this.stream ? this.stream.getVideoTracks()[0] : null;
+        const settings = currentTrack ? currentTrack.getSettings() : {};
         const actualWidth = settings.width || this.video.videoWidth || 1920;
         const actualHeight = settings.height || this.video.videoHeight || 1080;
-        console.log(`[Smart Mirror] Maximum Camera Resolution Active: ${actualWidth}x${actualHeight}`);
+        console.log(`[Smart Mirror] Galaxy/Device Active Resolution: ${actualWidth}x${actualHeight}`);
         if (this.onStreamReady) this.onStreamReady(this.video, { width: actualWidth, height: actualHeight, isSim: false });
       };
 
@@ -83,6 +110,7 @@ export class CameraController {
         emitResolution();
       } else {
         this.video.onloadedmetadata = () => emitResolution();
+        this.video.oncanplay = () => emitResolution();
       }
       return true;
     } catch (err) {
