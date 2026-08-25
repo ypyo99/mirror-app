@@ -25,22 +25,43 @@ export class CameraController {
       this.stream = null;
     }
 
-    const constraints = {
-      audio: false,
-      video: {
-        facingMode: { ideal: this.facingMode },
-        width: { ideal: 1920, min: 720 },
-        height: { ideal: 1080, min: 480 },
-        aspectRatio: { ideal: 9 / 16 }
-      }
-    };
+    // 4K Ultra HD -> 2K QHD -> Full HD progressive resolution ladder
+    const resolutionCandidates = [
+      { width: { ideal: 3840, min: 1920 }, height: { ideal: 2160, min: 1080 }, frameRate: { ideal: 60, min: 30 } },
+      { width: { ideal: 2560, min: 1280 }, height: { ideal: 1440, min: 720 }, frameRate: { ideal: 60, min: 30 } },
+      { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 60, min: 24 } },
+      { width: { ideal: 1280 }, height: { ideal: 720 } }
+    ];
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('이 브라우저는 카메라 API를 지원하지 않습니다.');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream = null;
+      for (const res of resolutionCandidates) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: { ideal: this.facingMode },
+              ...res
+            }
+          });
+          if (stream) break;
+        } catch (resErr) {
+          console.warn('Resolution candidate not supported, trying next tier...', res);
+        }
+      }
+
+      if (!stream) {
+        // Fallback to basic constraint if specific resolutions fail
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: this.facingMode } }
+        });
+      }
+
       this.stream = stream;
       this.video.srcObject = stream;
       this.isSimulation = false;
@@ -48,7 +69,14 @@ export class CameraController {
       this.simCanvas.classList.add('hidden');
 
       await this.video.play();
-      if (this.onStreamReady) this.onStreamReady(this.video);
+
+      const track = stream.getVideoTracks()[0];
+      const settings = track ? track.getSettings() : {};
+      const actualWidth = settings.width || this.video.videoWidth;
+      const actualHeight = settings.height || this.video.videoHeight;
+      console.log(`[Smart Mirror] Maximum Camera Resolution Active: ${actualWidth}x${actualHeight}`);
+
+      if (this.onStreamReady) this.onStreamReady(this.video, { width: actualWidth, height: actualHeight });
       return true;
     } catch (err) {
       console.warn('Camera access failed or unavailable, starting simulation mode:', err);

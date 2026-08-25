@@ -192,6 +192,8 @@ export class CaptureController {
     outCanvas.width = width;
     outCanvas.height = height;
     const ctx = outCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Apply active filter
     ctx.filter = this.filters.getFilterString();

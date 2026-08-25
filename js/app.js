@@ -50,10 +50,19 @@ class SmartMirrorApp {
     await this.camera.startCamera('user');
   }
 
-  handleStreamReady(source) {
+  handleStreamReady(source, resInfo) {
     const permModal = document.getElementById('camera-prompt-modal');
     if (permModal) permModal.classList.add('hidden');
-    this.controls.showHUD('스마트 거울 준비 완료 ✨', '🪞', 1200);
+    
+    if (resInfo && resInfo.width && resInfo.height) {
+      const is4K = resInfo.width >= 3840 || resInfo.height >= 2160;
+      const isQHD = (resInfo.width >= 2560 || resInfo.height >= 1440) && !is4K;
+      const isFHD = (resInfo.width >= 1920 || resInfo.height >= 1080) && !is4K && !isQHD;
+      const label = is4K ? '4K Ultra HD' : (isQHD ? 'QHD 2K' : (isFHD ? 'Full HD' : 'HD'));
+      this.controls.showHUD(`최대 해상도 연결 (${label} ${resInfo.width}×${resInfo.height})`, '✨', 1800);
+    } else {
+      this.controls.showHUD('스마트 거울 준비 완료 ✨', '🪞', 1200);
+    }
   }
 
   handleCameraError(err) {
