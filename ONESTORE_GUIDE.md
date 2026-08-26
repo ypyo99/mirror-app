@@ -11,27 +11,30 @@
 | **앱 패키지명** | `com.ypyo.smartmirror` | `capacitor.config.json` & `build.gradle` 설정 완료 |
 | **버전 정보** | Version Code: `1` / Version Name: `1.0.0` | `android/app/build.gradle` |
 | **대표 아이콘** | 512 × 512 px (PNG, 정방형, 투명 없음) | `icons/onestore-icon-512.png` |
+| **대표 그래픽 이미지** | 1024 × 578 px (PNG/JPG, 홍보 배너) | `icons/feature-graphic-1024x578.png` |
 | **스크린샷** | 최소 3장 이상 (세로 1080×1920 또는 1080×2400 권장) | 스마트폰 화면 캡처 또는 브라우저 캡처 |
-| **개인정보처리방침 URL** | 카메라/저장소 권한 심사용 웹 URL | `https://ypyo99.github.io/mirror-app/privacy-policy.html` |
+| **개인정보처리방침 URL** | 카메라/저장소 권한 심사용 웹 URL | `https://ypyo99.github.io/smart-mirror/privacy-policy.html` |
 | **바이너리 파일 (APK)** | 서명된 릴리즈 APK (`app-release.apk`) | GitHub Actions 자동 빌드 또는 Android Studio |
 
 ---
 
 ## 🚀 2. APK 파일 빌드 및 획득 방법 (2가지 방법)
 
-### 방법 A: GitHub Actions를 통한 자동 빌드 (가장 간편 ⭐ 추천)
+### 방법 A: GitHub Actions를 통한 자동 빌드 및 서명 (가장 간편 ⭐ 추천)
 1. 현재 코드를 GitHub `main` 브랜치에 `git push` 합니다.
 2. GitHub 저장소 상단의 **Actions** 탭으로 이동합니다.
 3. **Build Android APK for ONE Store** 워크플로우가 자동으로 실행됩니다.
-4. 빌드가 완료되면 결과물(Artifacts)에서 `smart-mirror-release-apk`를 클릭하여 다운로드합니다.
+4. 빌드가 완료되면 아티팩트(Artifacts)에서 **`smart-mirror-signed-release-apk`**를 다운로드합니다.
+5. 압축 해제 후 생성된 **`smart-mirror-release-signed.apk` (서명 완료된 APK)**를 원스토어에 업로드합니다.
+   > ⚠️ `unsigned.apk`가 아닌 반드시 **`signed.apk`**를 업로드해야 "업로드 키를 추출할 수 없습니다" 오류가 발생하지 않습니다.
 
-### 방법 B: Android Studio를 통한 로컬 빌드
+### 방법 B: Android Studio를 통한 로컬 서명 빌드
 1. 터미널에서 `npm run cap:open` 을 실행하여 Android Studio를 엽니다.
 2. 상단 메뉴에서 **Build** > **Generate Signed Bundle / APK...** 선택
 3. **APK** 선택 후 [Next]
-4. Key store path 생성(Create new...) 또는 기존 키스토어 선택 후 비밀번호 입력
-5. **release** 빌드 타입 선택 후 [Create] 클릭
-6. 생성된 `app-release.apk` 파일을 원스토어에 업로드합니다.
+4. Key store path 생성(Create new...) 또는 기존 키스토어 선택 후 비밀번호/Key Alias 입력
+5. **release** 빌드 타입 선택 및 **V1/V2 서명 모두 체크** 후 [Create] 클릭
+6. 생성된 `app-release.apk` (서명 완료됨)를 원스토어에 업로드합니다.
 
 ---
 
@@ -100,7 +103,7 @@
 
 ### ⑥ 개인정보처리방침 URL
 ```text
-https://ypyo99.github.io/mirror-app/privacy-policy.html
+https://ypyo99.github.io/smart-mirror/privacy-policy.html
 ```
 
 ---
