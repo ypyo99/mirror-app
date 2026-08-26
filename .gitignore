@@ -1,0 +1,22 @@
+# Node modules & dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+www/
+dist/
+
+# Android build outputs & local config
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+*.keystore
+*.jks
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db

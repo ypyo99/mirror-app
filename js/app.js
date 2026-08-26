@@ -45,6 +45,7 @@ class SmartMirrorApp {
     this.bindPrimaryActionEvents();
     this.bindModalEvents();
     this.bindKeyboardShortcuts();
+    this.initCapacitorNative();
 
     // 3. Start Camera (or Fallback Demo)
     await this.camera.startCamera('user');
@@ -474,6 +475,57 @@ class SmartMirrorApp {
           break;
       }
     });
+  }
+
+  // ------------------------------------------------------------------------
+  // Native Mobile & Android Back Button Integration (Capacitor)
+  // ------------------------------------------------------------------------
+  initCapacitorNative() {
+    if (typeof window !== 'undefined' && window.Capacitor) {
+      const { App, SplashScreen, StatusBar } = window.Capacitor.Plugins || {};
+
+      // Hide native splash screen smoothly
+      if (SplashScreen) {
+        setTimeout(() => {
+          try { SplashScreen.hide(); } catch (e) {}
+        }, 500);
+      }
+
+      // Android Hardware Back Button Handling
+      if (App) {
+        let lastBackPressTime = 0;
+        App.addListener('backButton', () => {
+          // 1. Close open modals first
+          const openModal = document.querySelector('.modal:not(.hidden)');
+          if (openModal) {
+            openModal.classList.add('hidden');
+            return;
+          }
+
+          // 2. Close open drawers
+          const openDrawer = document.querySelector('.drawer-panel:not(.hidden)');
+          if (openDrawer) {
+            this.controls.closeAllDrawers();
+            return;
+          }
+
+          // 3. Unfreeze screen if frozen
+          if (this.capture && this.capture.isFrozen) {
+            this.capture.toggleFreeze();
+            return;
+          }
+
+          // 4. Double tap back button to exit
+          const now = Date.now();
+          if (now - lastBackPressTime < 2000) {
+            App.exitApp();
+          } else {
+            lastBackPressTime = now;
+            this.controls.showHUD('뒤로가기를 한 번 더 누르면 앱이 종료됩니다', '🚪', 2000);
+          }
+        });
+      }
+    }
   }
 }
 

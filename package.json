@@ -1,0 +1,37 @@
+{
+  "name": "smart-mirror-hd",
+  "version": "1.0.0",
+  "description": "Smart Mirror HD - 고화질 뷰티 & 메이크업 스마트 거울",
+  "main": "index.html",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npm run build && npx cap sync android",
+    "cap:open": "npx cap open android",
+    "build:apk": "npm run build && npx cap sync android && cd android && gradlew assembleDebug",
+    "build:release": "npm run build && npx cap sync android && cd android && gradlew assembleRelease",
+    "build:bundle": "npm run build && npx cap sync android && cd android && gradlew bundleRelease"
+  },
+  "keywords": [
+    "mirror",
+    "smart-mirror",
+    "beauty",
+    "camera",
+    "onestore",
+    "android",
+    "capacitor"
+  ],
+  "author": "Smart Mirror",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/splash-screen": "^7.0.4",
+    "@capacitor/status-bar": "^7.0.4"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.3"
+  }
+}

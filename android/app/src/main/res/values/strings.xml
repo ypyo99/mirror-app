@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">스마트 거울</string>
+    <string name="title_activity_main">스마트 거울</string>
+    <string name="package_name">com.ypyo.smartmirror</string>
+    <string name="custom_url_scheme">com.ypyo.smartmirror</string>
+</resources>
