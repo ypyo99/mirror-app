@@ -380,6 +380,16 @@ class SmartMirrorApp {
       previewModal.classList.add('hidden');
       previewImg.src = '';
       currentCapturedDataUrl = null;
+
+      // 1. Unfreeze if it was frozen
+      if (this.capture && this.capture.isFrozen) {
+        this.capture.unfreeze();
+      }
+
+      // 2. Ensure video stream is actively playing
+      if (this.videoEl) {
+        this.videoEl.play().catch(() => {});
+      }
     };
 
     btnClosePreview.addEventListener('click', closePreview);

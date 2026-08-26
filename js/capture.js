@@ -250,6 +250,12 @@ export class CaptureController {
     }
 
     const dataUrl = outCanvas.toDataURL('image/png', 0.95);
+
+    // Ensure camera video is playing continuously if not frozen
+    if (this.camera && this.camera.video && !this.isFrozen) {
+      this.camera.video.play().catch(() => {});
+    }
+
     if (onPhotoCaptured) onPhotoCaptured(dataUrl);
   }
 
