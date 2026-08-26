@@ -96,8 +96,10 @@ export class CameraController {
       this.simCanvas.classList.add('hidden');
 
       await this.video.play();
+      this.video.classList.add('ready');
 
       const emitResolution = () => {
+        this.video.classList.add('ready');
         const currentTrack = this.stream ? this.stream.getVideoTracks()[0] : null;
         const settings = currentTrack ? currentTrack.getSettings() : {};
         const actualWidth = settings.width || this.video.videoWidth || 1920;
@@ -106,11 +108,12 @@ export class CameraController {
         if (this.onStreamReady) this.onStreamReady(this.video, { width: actualWidth, height: actualHeight, isSim: false });
       };
 
-      if (this.video.readyState >= 1 && this.video.videoWidth > 0) {
+      if (this.video.readyState >= 2 && this.video.videoWidth > 0) {
         emitResolution();
       } else {
+        this.video.onloadeddata = () => emitResolution();
         this.video.onloadedmetadata = () => emitResolution();
-        this.video.oncanplay = () => emitResolution();
+        this.video.onplaying = () => emitResolution();
       }
       return true;
     } catch (err) {
