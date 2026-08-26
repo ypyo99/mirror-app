@@ -253,22 +253,105 @@ export class CaptureController {
     if (onPhotoCaptured) onPhotoCaptured(dataUrl);
   }
 
-  downloadPhoto(dataUrl) {
-    const link = document.createElement('a');
+  async downloadPhoto(dataUrl) {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    
-    link.download = `SmartMirror_${timestamp}.png`;
-    link.href = dataUrl;
-    link.click();
+    const filename = `SmartMirror_${timestamp}.png`;
+
+    // 1. Native Android App (Capacitor)
+    if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem } = window.Capacitor.Plugins || {};
+        if (Filesystem) {
+          const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+          
+          // Save to Documents directory
+          const result = await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: 'DOCUMENTS',
+            recursive: true
+          });
+          
+          console.log('[Smart Mirror] Photo saved natively to Documents:', result.uri);
+          alert(`사진이 기기에 성공적으로 저장되었습니다! 📸\n(저장 파일: ${filename})`);
+          return true;
+        }
+      } catch (nativeErr) {
+        console.warn('Native Filesystem save failed, attempting Share fallback:', nativeErr);
+        // Fallback: Open native share dialog so user can save or send
+        try {
+          const { Share, Filesystem } = window.Capacitor.Plugins || {};
+          if (Filesystem && Share) {
+            const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+            const cacheResult = await Filesystem.writeFile({
+              path: filename,
+              data: base64Data,
+              directory: 'CACHE'
+            });
+            await Share.share({
+              title: '스마트 거울 사진 저장',
+              url: cacheResult.uri,
+              dialogTitle: '사진 저장 또는 공유'
+            });
+            return true;
+          }
+        } catch (shareErr) {
+          console.warn('Native fallback share failed:', shareErr);
+        }
+      }
+    }
+
+    // 2. Web Browser Environment
+    try {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('Download click failed:', e);
+      window.open(dataUrl, '_blank');
+    }
   }
 
   async sharePhoto(dataUrl) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const filename = `SmartMirror_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+
+    // 1. Native Android App (Capacitor)
+    if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, Share } = window.Capacitor.Plugins || {};
+        if (Filesystem && Share) {
+          const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+          const cacheResult = await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: 'CACHE'
+          });
+          
+          await Share.share({
+            title: '스마트 거울로 찍은 사진 ✨',
+            text: '스마트 거울 앱으로 촬영한 사진입니다.',
+            url: cacheResult.uri,
+            dialogTitle: '사진 공유'
+          });
+          return true;
+        }
+      } catch (err) {
+        console.warn('Native share failed:', err);
+      }
+    }
+
+    // 2. Web Share API (Modern Browser)
     if (navigator.share && navigator.canShare) {
       try {
         const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], 'SmartMirror.png', { type: 'image/png' });
+        const file = new File([blob], filename, { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: '스마트 거울로 찍은 사진',
@@ -278,11 +361,11 @@ export class CaptureController {
           return true;
         }
       } catch (err) {
-        if (err.name !== 'AbortError') console.warn('Share error:', err);
+        if (err.name !== 'AbortError') console.warn('Web Share error:', err);
       }
     }
 
-    // Fallback: Copy to clipboard if possible or alert
+    // 3. Fallback: Copy to clipboard or download
     try {
       const blob = await (await fetch(dataUrl)).blob();
       await navigator.clipboard.write([
@@ -291,7 +374,7 @@ export class CaptureController {
       alert('사진이 클립보드에 복사되었습니다! 원하는 곳에 붙여넣기(Ctrl+V) 하세요.');
       return true;
     } catch (e) {
-      this.downloadPhoto(dataUrl);
+      await this.downloadPhoto(dataUrl);
     }
   }
 }
