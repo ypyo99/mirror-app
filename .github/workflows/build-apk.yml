@@ -34,44 +34,32 @@ jobs:
       - name: Build Web Assets & Sync Capacitor
         run: npm run cap:sync
 
+      - name: Prepare Signing Keystore
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "Decoding SIGNING_KEY secret into android/app/release.keystore..."
+            echo "$SIGNING_KEY" | base64 -d > android/app/release.keystore
+          else
+            echo "Generating persistent release keystore in android/app/release.keystore..."
+            keytool -genkeypair -v -keystore android/app/release.keystore -alias smartmirror -keyalg RSA -keysize 2048 -validity 10000 -storepass "smartmirror123!" -keypass "smartmirror123!" -dname "CN=SmartMirror, OU=Dev, O=YPYO, L=Seoul, ST=Seoul, C=KR"
+          fi
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: Build Debug & Release APK
+      - name: Build Debug & Signed Release APK
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           ./gradlew assembleDebug assembleRelease --stacktrace
-
-      - name: Sign Release APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: android/app/build/outputs/apk/release
-          signingKey: ${{ secrets.SIGNING_KEY }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          alias: ${{ secrets.ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        continue-on-error: true
-
-      - name: Fallback Self-Sign Release APK if secrets not configured
-        if: steps.sign_app.outcome != 'success' || env.SIGNING_KEY == ''
-        run: |
-          # Create a persistent release keystore for signing
-          keytool -genkeypair -v -keystore release.jks -alias smartmirror -keyalg RSA -keysize 2048 -validity 10000 -storepass "smartmirror123!" -keypass "smartmirror123!" -dname "CN=SmartMirror, OU=Dev, O=YPYO, L=Seoul, ST=Seoul, C=KR"
-          
-          # Find unsigned apk and sign it
-          UNSIGNED_APK=$(find android/app/build/outputs/apk/release -name "*unsigned.apk" | head -n 1)
-          if [ -n "$UNSIGNED_APK" ]; then
-            echo "Signing $UNSIGNED_APK with apksigner..."
-            SIGNED_APK="android/app/build/outputs/apk/release/smart-mirror-release-signed.apk"
-            
-            # Find apksigner
-            BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
-            $BUILD_TOOLS_DIR/zipalign -v -p 4 "$UNSIGNED_APK" "${UNSIGNED_APK%.apk}-aligned.apk"
-            $BUILD_TOOLS_DIR/apksigner sign --ks release.jks --ks-pass pass:"smartmirror123!" --ks-key-alias smartmirror --key-pass pass:"smartmirror123!" --out "$SIGNED_APK" "${UNSIGNED_APK%.apk}-aligned.apk"
-            
-            echo "Release APK successfully signed: $SIGNED_APK"
-          fi
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
@@ -83,7 +71,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smart-mirror-signed-release-apk
-          path: |
-            android/app/build/outputs/apk/release/*signed*.apk
-            android/app/build/outputs/apk/release/*.apk
-
+          path: android/app/build/outputs/apk/release/*.apk
